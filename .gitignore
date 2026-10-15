@@ -1,0 +1,40 @@
+# =========================
+# Vivado generated folders
+# =========================
+
+*.cache/
+*.hw/
+*.ip_user_files/
+*.runs/
+*.gen/
+
+# Vivado creates this as <project_name>.sim/
+# This will NOT ignore your own top-level sim/ folder
+*.sim/
+
+# Vivado temporary files
+.Xil/
+
+# =========================
+# Vivado logs / reports
+# =========================
+
+*.jou
+*.log
+*.str
+
+# =========================
+# Optional generated files
+# =========================
+
+*.dcp
+*.bit
+*.bin
+*.ltx
+
+# =========================
+# OS / editor junk
+# =========================
+
+Thumbs.db
+.DS_Store
