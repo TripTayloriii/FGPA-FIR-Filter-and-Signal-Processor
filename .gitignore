@@ -31,6 +31,7 @@
 *.bit
 *.bin
 *.ltx
+*.vscode
 
 # =========================
 # OS / editor junk
