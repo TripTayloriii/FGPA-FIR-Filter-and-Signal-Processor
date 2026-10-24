@@ -1,6 +1,4 @@
-// Packs pairs of UART bytes into 16-bit samples, little-endian like WAV:
-// the first byte after reset is the low byte, the second is the high byte.
-// sample_valid pulses for one cycle when a full sample is ready.
+// Packs pairs of UART bytes into 16-bit samples
 module sample_assembler (
     input logic         clk,
     input logic         nrst,

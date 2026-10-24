@@ -1,7 +1,5 @@
 // Synchronous FIFO for filtered samples waiting to be sent over UART.
-// rd_data always shows the oldest entry (first-word fall-through): look at
-// it while empty is low, and pulse rd_en to drop it. Writing while full is
-// dropped and sets the sticky overflow flag (shown on an LED).
+
 module sample_fifo #(
     parameter int WIDTH = 16,
     parameter int DEPTH = 512   //must be a power of 2
