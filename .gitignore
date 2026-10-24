@@ -39,3 +39,13 @@
 
 Thumbs.db
 .DS_Store
+
+# =========================
+# Simulation outputs (sim/run_sim.ps1)
+# =========================
+
+sim/xsim_work/
+sim/vectors/
+*.pb
+*.wdb
+__pycache__/
