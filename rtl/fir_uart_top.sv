@@ -3,11 +3,7 @@
 //   uart_txd_in -> uart_rx -> sample_assembler -> fir_ctrl (fir595)
 //               -> sample_fifo -> byte serializer -> uart_tx -> uart_rxd_out
 //
-// Samples are 16-bit signed, little-endian (low byte first) in both
-// directions. Press the RESET button (ck_rst) before each run so the FIR
-// starts from zero state and the byte pairing starts on a low byte.
-//
-// LEDs: [0] heartbeat, [1] RX activity, [2] TX activity, [3] FIFO overflow (sticky)
+
 module fir_uart_top #(
     parameter CLK_SPEED = 100_000_000,
     parameter int BAUDRATE = 1_000_000,
@@ -17,7 +13,7 @@ module fir_uart_top #(
     input logic         ck_rst,         //active-low button
     input logic         uart_txd_in,    //PC -> FPGA
     output logic        uart_rxd_out,   //FPGA -> PC
-    output logic[3:0]   led
+    output logic[2:0]   led             //[0] RX activity, [1] TX activity, [2] FIFO overflow (sticky)
 );
 localparam logic HIGH = 1'b1;
 localparam logic LOW = 1'b0;
@@ -102,8 +98,7 @@ sample_fifo #(
 );
 
 // Byte serializer: send the sample at the FIFO head as low byte, then high
-// byte, then pop it. tx_start is combinational so a new byte starts the
-// cycle uart_tx becomes free (keeps TX byte rate equal to RX byte rate).
+// byte, then pop it. 
 logic send_high_byte;
 logic tx_start;
 logic[7:0] tx_data;
@@ -136,18 +131,15 @@ uart_tx #(
 
 // LEDs. Activity LEDs are stretched to ~20 ms so single bytes are visible.
 localparam int LED_STRETCH = CLK_SPEED / 50;
-logic[26:0] heartbeat_counter;
 int rx_led_counter;
 int tx_led_counter;
 
 always_ff @(posedge clk or negedge nrst) begin
     if(!nrst) begin
-        heartbeat_counter <= '0;
         rx_led_counter <= 0;
         tx_led_counter <= 0;
     end
     else begin
-        heartbeat_counter <= heartbeat_counter + 1'b1;
         if(rx_valid) rx_led_counter <= LED_STRETCH;
         else if(rx_led_counter != 0) rx_led_counter <= rx_led_counter - 1;
         if(tx_busy) tx_led_counter <= LED_STRETCH;
@@ -155,8 +147,7 @@ always_ff @(posedge clk or negedge nrst) begin
     end
 end
 
-assign led[0] = heartbeat_counter[26];
-assign led[1] = (rx_led_counter != 0);
-assign led[2] = (tx_led_counter != 0);
-assign led[3] = fifo_overflow;
+assign led[0] = (rx_led_counter != 0);
+assign led[1] = (tx_led_counter != 0);
+assign led[2] = fifo_overflow;
 endmodule

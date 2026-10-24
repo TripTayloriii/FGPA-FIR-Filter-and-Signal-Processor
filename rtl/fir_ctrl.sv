@@ -4,8 +4,7 @@
 //   - drop ap_start when fir595 pulses ap_ready (it has taken the input)
 //   - on ap_done: latch ap_return (it is only valid during that one cycle)
 //     and pulse y_valid
-// fir595 needs 5 cycles per sample. Samples arrive every ~2000 cycles from
-// the UART, so a new x_valid never shows up while a sample is in flight.
+
 module fir_ctrl (
     input logic         clk,
     input logic         nrst,
@@ -27,7 +26,7 @@ logic[15:0] ap_return;
 
 fir595 fir595_inst (
     .ap_clk(clk),
-    .ap_rst(!nrst),     //fir595 reset is active-high and synchronous
+    .ap_rst(!nrst),     
     .ap_start(ap_start),
     .ap_done(ap_done),
     .ap_idle(ap_idle),
