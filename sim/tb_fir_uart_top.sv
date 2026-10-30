@@ -52,7 +52,7 @@ module tb_fir_uart_top;
     logic       ck_rst = 1'b0;      // active-low reset button, start pressed
     logic       pc_tx = 1'b1;       // PC -> FPGA line; UART idles high
     wire        pc_rx;              // FPGA -> PC line
-    wire [3:0]  led;
+    wire [2:0]  led;
 
     fir_uart_top #(
         .CLK_SPEED(CLK_SPEED),
@@ -226,7 +226,7 @@ module tb_fir_uart_top;
         run_test("Test 2 (after reset)",       BIT_NS);
         run_test("Test 3 (PC 2 pct fast)",    BIT_NS * 0.98);
 
-        if (led[3]) begin
+        if (led[2]) begin
             $error("[TB] FIFO overflow LED is on");
             n_errors++;
         end

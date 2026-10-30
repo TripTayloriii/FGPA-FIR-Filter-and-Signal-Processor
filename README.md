@@ -44,7 +44,6 @@ It ends with `PASS: 768/768 samples match fir_model.py`.
    - *Add Constraints:* `constraints/arty_s7_25.xdc`.
    - Set `fir_uart_top` as the top module.
 3. **Generate Bitstream**, then *Open Hardware Manager → Auto Connect → Program Device*.
-   LED LD2 should blink (heartbeat).
 4. Find the COM port: in Device Manager, the Arty shows up as **two** "USB Serial Port"
    entries. The UART is usually the one with the higher number.
 5. Run:
@@ -55,7 +54,7 @@ It ends with `PASS: 768/768 samples match fir_model.py`.
    `PASS: all N samples match fir_model.py`. Listen to `input_8k.wav` vs `output.wav`:
    the output is low-pass filtered (slightly duller).
 
-LEDs: LD2 heartbeat, LD3 RX activity, LD4 TX activity, LD5 output-FIFO overflow
+LEDs: LD2 RX activity, LD3 TX activity, LD4 output-FIFO overflow
 (should never light up; if it does, press RESET).
 
 **If every sample mismatches**, the high and low bytes are probably swapped
