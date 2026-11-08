@@ -1,6 +1,6 @@
 # FGPA-FIR-Filter-and-Signal-Processor
 
-`.wav → Python → UART → FPGA (5-9-5 FIR) → UART → Python → output.wav`
+`.wav → Python → UART → FPGA (3-tap high-pass FIR: 64, −127, 64 / 128, ×4 gain) → UART → Python → output.wav`
 on an Arty S7-25 (xc7s25csga324-1), 100 MHz, UART 1 000 000 baud 8N1.
 Samples are 16-bit signed, little-endian, 8 kHz.
 
@@ -8,8 +8,9 @@ Samples are 16-bit signed, little-endian, 8 kHz.
 
 | Path | What |
 |---|---|
-| `HLS/fir595.cpp/.h` | HLS source of the filter: `y = round((5x[n] + 9x[n-1] + 5x[n-2]) / 19)` |
-| `rtl/fir595.v`, `rtl/fir595_ama_addmuladd_*.v` | HLS-generated Verilog (copied from `hls/syn/verilog`, do not edit) |
+| `HLS/fir595.cpp/.h` | HLS source of the filter: `y = sat16(round((64x[n] − 127x[n-1] + 64x[n-2]) / 32))` (taps 0.5, −0.9922, 0.5, then ×4 / +12 dB gain) |
+| `HLS/hls_config.cfg` | HLS settings; regenerate with `cd HLS; v++ -c --mode hls --config hls_config.cfg --work_dir <dir>` |
+| `rtl/fir595.v` | HLS-generated Verilog (copied from `<dir>/hls/syn/verilog`, do not edit) |
 | `rtl/uart_rx.sv` / `rtl/uart_tx.sv` | 8N1 UART receiver / transmitter |
 | `rtl/sample_assembler.sv` | 2 bytes (low, high) → 16-bit sample |
 | `rtl/fir_ctrl.sv` | drives fir595's `ap_start/ap_done` handshake |
@@ -44,15 +45,18 @@ It ends with `PASS: 768/768 samples match fir_model.py`.
    - *Add Constraints:* `constraints/arty_s7_25.xdc`.
    - Set `fir_uart_top` as the top module.
 3. **Generate Bitstream**, then *Open Hardware Manager → Auto Connect → Program Device*.
-4. Find the COM port: in Device Manager, the Arty shows up as **two** "USB Serial Port"
-   entries. The UART is usually the one with the higher number.
+4. Find the COM port: in Device Manager under *Ports*, use the Arty's **"USB Serial Port"**
+   entry (FTDI, VID:PID 0403:6010). Ignore "Standard Serial over Bluetooth link" ports:
+   opening one fails with *"The semaphore timeout period has expired"*.
 5. Run:
    ```powershell
-   python scripts/send_wav.py "wavFiles/Trip Taylor.wav" --port COM5 --out output.wav --save-input input_8k.wav
+   python scripts/send_wav.py "wavFiles/Trip Taylor.wav" --port COM8 --out output.wav --save-input input_8k.wav
    ```
    Press the board's red **RESET** button when prompted. The script should print
    `PASS: all N samples match fir_model.py`. Listen to `input_8k.wav` vs `output.wav`:
-   the output is low-pass filtered (slightly duller).
+   the output is high-pass filtered: bass is removed (null at 159 Hz), and a fixed ×4
+   (+12 dB) gain makes up for the lost bass energy (+1 dB at 1 kHz, +18 dB at 4 kHz).
+   Loud treble may clip (about 0.6% of samples in `Trip Taylor.wav`, none in `moon.wav`).
 
 LEDs: LD2 RX activity, LD3 TX activity, LD4 output-FIFO overflow
 (should never light up; if it does, press RESET).

@@ -1,8 +1,11 @@
 """Bit-accurate Python model of the HLS fir595 block (HLS/fir595.cpp).
 
-    acc = 5*x[n] + 9*x[n-1] + 5*x[n-2]          (exact integer)
-    y   = (acc * 55188 + 2**19) >> 20           (arithmetic shift = floor)
-    y   = clamp(y, -32768, 32767)               (never active, kept to mirror the C++)
+Taps h = {64, -127, 64} / 128 = {0.5, -0.9922, 0.5} at fs = 8 kHz (high-pass),
+followed by a x4 (+12 dB) output gain, so the net scaling is / 32:
+
+    acc = 64*x[n] - 127*x[n-1] + 64*x[n-2]   (exact integer)
+    y   = (acc + 2**4) >> 5                   (arithmetic shift = floor)
+    y   = clamp(y, -32768, 32767)             (active: gain is up to 7.97 near 4 kHz)
 
 The delay line starts at zero, which is the state fir595 is in after reset.
 
@@ -16,9 +19,8 @@ import os
 
 import numpy as np
 
-COEF = (5, 9, 5)
-NORM_MULT = 55188    # round(2^20 / 19)
-NORM_SHIFT = 20
+COEF = (64, -127, 64)   # h * 2^7 for h = 0.5, -0.9922, 0.5
+COEF_SHIFT = 5          # /128 for the taps, x4 output gain
 
 
 def fir595(x):
@@ -27,7 +29,7 @@ def fir595(x):
     x1 = np.concatenate(([0], x[:-1]))          # x[n-1]
     x2 = np.concatenate(([0, 0], x[:-2]))[:len(x)]  # x[n-2]
     acc = COEF[0] * x + COEF[1] * x1 + COEF[2] * x2
-    y = (acc * NORM_MULT + (1 << (NORM_SHIFT - 1))) >> NORM_SHIFT
+    y = (acc + (1 << (COEF_SHIFT - 1))) >> COEF_SHIFT
     y = np.clip(y, -32768, 32767)
     return y.astype(np.int16)
 
@@ -35,13 +37,15 @@ def fir595(x):
 def test_signal(fs=8000):
     """Short signal: impulses, full-scale extremes, a few sine tones, noise."""
     parts = []
-    # impulse response: should come out as round(10000*[5,9,5]/19) then zeros
+    # impulse response: 4*10000*[0.5, -0.9922, 0.5] = [20000, -39688, 20000],
+    # the middle one clamped to -32768, then zeros
     parts.append(np.r_[10000, np.zeros(7)])
-    # negative full-scale impulse and full-scale steps (checks the extremes)
+    # negative full-scale impulse and full-scale steps (checks the extremes;
+    # the impulse and the step edges saturate, the steady part comes out near 0)
     parts.append(np.r_[-32768, np.zeros(3)])
     parts.append(np.full(6, 32767))
     parts.append(np.full(6, -32768))
-    # Nyquist-rate square wave (the filter's weakest point: gain 1/19)
+    # Nyquist-rate square wave (highest gain of the filter: 7.97, saturates)
     parts.append(np.tile([32767, -32768], 4))
     n = np.arange(64)
     for f in (300, 1000, 3000):

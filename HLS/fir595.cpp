@@ -4,8 +4,8 @@ sample_t fir595(sample_t x) {
 #pragma HLS INTERFACE mode=ap_ctrl_hs port=return
 #pragma HLS INTERFACE mode=ap_none    port=x
 
-    // Filter coefficients: 5, 9, 5
-    const coef_t COEF[N_TAPS] = {5, 9, 5};
+    // Filter coefficients 0.5, -0.9922, 0.5 in Q7 (h * 2^7)
+    const coef_t COEF[N_TAPS] = {64, -127, 64};
 
     static sample_t shift_reg[N_TAPS] = {0, 0, 0};
 #pragma HLS ARRAY_PARTITION variable=shift_reg type=complete  //this is so HLS doesnt use ram for this but makes shift registers
@@ -23,15 +23,14 @@ SHIFT:
 MAC:
     for (int i = 0; i < N_TAPS; i++) {
 #pragma HLS UNROLL
-        acc += shift_reg[i] * COEF[i];
+        acc += (acc_t)shift_reg[i] * COEF[i];
     }
 
-    // Divide by 19 using multiply + shift, with rounding  becasue otherwsie teh amplitudes won't fit in 16bits
-    prod_t scaled = (prod_t)acc * NORM_MULT;
-    scaled += (prod_t)1 << (NORM_SHIFT - 1);   // add 0.5 LSB so the shift rounds
-    prod_t y = scaled >> NORM_SHIFT;
+    // Undo the 2^7 coefficient scaling and apply the x4 gain (net / 2^5),
+    // with rounding (add 0.5 LSB, then shift)
+    ap_int<25> y = ((ap_int<25>)acc + (1 << (COEF_SHIFT - 1))) >> COEF_SHIFT;
 
-    // make sure we still in 16bit range
+    // Gain reaches 7.97 near 4 kHz, so loud treble overflows 16 bits: saturate
     if (y > 32767)       y = 32767;
     else if (y < -32768) y = -32768;
 
