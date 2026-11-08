@@ -4,15 +4,15 @@
 // Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 // ==============================================================
 `timescale 1 ns / 1 ps
-(* DowngradeIPIdentifiedWarnings="yes" *) module fir595_ama_addmuladd_20s_20s_16ns_20ns_36_4_1_DSP48_0 (
+(* DowngradeIPIdentifiedWarnings="yes" *) module fir595_ama_addmuladd_16s_16s_14ns_31s_32_4_1_DSP48_0 (
     input clk,
     input rst,
     input ce,
-    input  [20 - 1:0] in0,
-    input  [20 - 1:0] in1,
-    input  [16 - 1:0] in2,
-    input  [20 - 1:0] in3,
-    output [36 - 1:0]  dout);
+    input  [16 - 1:0] in0,
+    input  [16 - 1:0] in1,
+    input  [14 - 1:0] in2,
+    input  [31 - 1:0] in3,
+    output [32 - 1:0]  dout);
 
 
 wire signed [18 - 1:0]     b;
@@ -30,13 +30,18 @@ reg  signed [48 - 1:0]     p_reg;
 assign a = $signed(in0);
 assign d = $signed(in1);
 assign b = $unsigned(in2);
-assign c = $unsigned(in3);
+assign c = $signed(in3);
 
 assign ad = a + d;
 assign m  = ad_reg * b_reg;
 assign p  = m_reg + c;
 always @(posedge clk) begin
-    if (ce) begin
+    if (rst) begin
+        m_reg  <= 0;
+        ad_reg <= 0;
+        b_reg  <= 0;
+        p_reg  <= 0;
+    end else if (ce) begin
         m_reg  <= m;
         ad_reg <= ad;
         b_reg  <= b;
@@ -48,7 +53,7 @@ assign dout = p_reg;
 
 endmodule
 
-(* DowngradeIPIdentifiedWarnings="yes" *) module fir595_ama_addmuladd_20s_20s_16ns_20ns_36_4_1(
+(* DowngradeIPIdentifiedWarnings="yes" *) module fir595_ama_addmuladd_16s_16s_14ns_31s_32_4_1(
     clk,
     reset,
     ce,
@@ -74,7 +79,7 @@ input[din2_WIDTH - 1:0] din2;
 input[din3_WIDTH - 1:0] din3;
 output[dout_WIDTH - 1:0] dout;
 
-fir595_ama_addmuladd_20s_20s_16ns_20ns_36_4_1_DSP48_0 fir595_ama_addmuladd_20s_20s_16ns_20ns_36_4_1_DSP48_0_U(
+fir595_ama_addmuladd_16s_16s_14ns_31s_32_4_1_DSP48_0 fir595_ama_addmuladd_16s_16s_14ns_31s_32_4_1_DSP48_0_U(
     .clk( clk ),
     .rst( reset ),
     .ce( ce ),

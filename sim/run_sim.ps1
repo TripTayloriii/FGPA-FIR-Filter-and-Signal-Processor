@@ -16,7 +16,7 @@ if ($LASTEXITCODE -ne 0) { throw "fir_model.py failed" }
 Push-Location $work
 try {
     & "$VivadoBin\xvlog.bat" `
-        "$repo\rtl\fir595_ama_addmuladd_20s_20s_16ns_20ns_36_4_1.v" `
+        "$repo\rtl\fir595_ama_addmuladd_16s_16s_14ns_31s_32_4_1.v" `
         "$repo\rtl\fir595.v"
     if ($LASTEXITCODE -ne 0) { throw "xvlog (Verilog) failed" }
 

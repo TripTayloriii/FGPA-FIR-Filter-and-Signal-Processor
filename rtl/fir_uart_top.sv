@@ -1,4 +1,4 @@
-// Top level: UART in -> 5-9-5 FIR -> UART out, for the Arty S7-25.
+// Top level: UART in -> 3-tap FIR (0.2941, 0.6250, 0.2941) -> UART out, for the Arty S7-25.
 //
 //   uart_txd_in -> uart_rx -> sample_assembler -> fir_ctrl (fir595)
 //               -> sample_fifo -> byte serializer -> uart_tx -> uart_rxd_out

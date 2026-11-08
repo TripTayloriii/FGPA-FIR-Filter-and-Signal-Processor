@@ -4,8 +4,8 @@ sample_t fir595(sample_t x) {
 #pragma HLS INTERFACE mode=ap_ctrl_hs port=return
 #pragma HLS INTERFACE mode=ap_none    port=x
 
-    // Filter coefficients: 5, 9, 5
-    const coef_t COEF[N_TAPS] = {5, 9, 5};
+    // Filter coefficients 0.2941, 0.6250, 0.2941 in Q15 (round(h * 2^15))
+    const coef_t COEF[N_TAPS] = {9637, 20480, 9637};
 
     static sample_t shift_reg[N_TAPS] = {0, 0, 0};
 #pragma HLS ARRAY_PARTITION variable=shift_reg type=complete  //this is so HLS doesnt use ram for this but makes shift registers
@@ -26,12 +26,10 @@ MAC:
         acc += shift_reg[i] * COEF[i];
     }
 
-    // Divide by 19 using multiply + shift, with rounding  becasue otherwsie teh amplitudes won't fit in 16bits
-    prod_t scaled = (prod_t)acc * NORM_MULT;
-    scaled += (prod_t)1 << (NORM_SHIFT - 1);   // add 0.5 LSB so the shift rounds
-    prod_t y = scaled >> NORM_SHIFT;
+    // Undo the 2^15 coefficient scaling, with rounding (add 0.5 LSB, then shift)
+    ap_int<33> y = ((ap_int<33>)acc + (1 << (COEF_SHIFT - 1))) >> COEF_SHIFT;
 
-    // make sure we still in 16bit range
+    // The DC gain is 1.2132, so loud low-frequency input overflows 16 bits: saturate
     if (y > 32767)       y = 32767;
     else if (y < -32768) y = -32768;
 
