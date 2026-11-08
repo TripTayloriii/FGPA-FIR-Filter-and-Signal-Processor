@@ -26,10 +26,11 @@ MAC:
         acc += (acc_t)shift_reg[i] * COEF[i];
     }
 
-    // Undo the 2^7 coefficient scaling, with rounding (add 0.5 LSB, then shift)
+    // Undo the 2^7 coefficient scaling and apply the x4 gain (net / 2^5),
+    // with rounding (add 0.5 LSB, then shift)
     ap_int<25> y = ((ap_int<25>)acc + (1 << (COEF_SHIFT - 1))) >> COEF_SHIFT;
 
-    // Gain reaches 1.99 near 4 kHz, so loud treble overflows 16 bits: saturate
+    // Gain reaches 7.97 near 4 kHz, so loud treble overflows 16 bits: saturate
     if (y > 32767)       y = 32767;
     else if (y < -32768) y = -32768;
 

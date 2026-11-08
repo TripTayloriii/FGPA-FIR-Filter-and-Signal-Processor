@@ -1,4 +1,4 @@
-// Top level: UART in -> 3-tap high-pass FIR (64, -127, 64)/128 -> UART out, for the Arty S7-25.
+// Top level: UART in -> 3-tap high-pass FIR (64, -127, 64)/128, x4 gain -> UART out, for the Arty S7-25.
 //
 //   uart_txd_in -> uart_rx -> sample_assembler -> fir_ctrl (fir595)
 //               -> sample_fifo -> byte serializer -> uart_tx -> uart_rxd_out
