@@ -1,10 +1,10 @@
 """Bit-accurate Python model of the HLS fir595 block (HLS/fir595.cpp).
 
-Taps h = {0.2941, 0.6250, 0.2941} at fs = 8 kHz, stored in Q15:
+Taps h = {64, -127, 64} / 128 = {0.5, -0.9922, 0.5} at fs = 8 kHz (high-pass):
 
-    acc = 9637*x[n] + 20480*x[n-1] + 9637*x[n-2]   (exact integer)
-    y   = (acc + 2**14) >> 15                       (arithmetic shift = floor)
-    y   = clamp(y, -32768, 32767)                   (active: DC gain is 1.2132)
+    acc = 64*x[n] - 127*x[n-1] + 64*x[n-2]   (exact integer)
+    y   = (acc + 2**6) >> 7                   (arithmetic shift = floor)
+    y   = clamp(y, -32768, 32767)             (active: gain is up to 1.99 near 4 kHz)
 
 The delay line starts at zero, which is the state fir595 is in after reset.
 
@@ -18,8 +18,8 @@ import os
 
 import numpy as np
 
-COEF = (9637, 20480, 9637)   # round(h * 2^15) for h = 0.2941, 0.6250, 0.2941
-COEF_SHIFT = 15
+COEF = (64, -127, 64)   # h * 2^7 for h = 0.5, -0.9922, 0.5
+COEF_SHIFT = 7
 
 
 def fir595(x):
@@ -36,14 +36,14 @@ def fir595(x):
 def test_signal(fs=8000):
     """Short signal: impulses, full-scale extremes, a few sine tones, noise."""
     parts = []
-    # impulse response: should come out as about 10000*[0.2941, 0.6250, 0.2941] then zeros
+    # impulse response: should come out as about 10000*[0.5, -0.9922, 0.5] then zeros
     parts.append(np.r_[10000, np.zeros(7)])
     # negative full-scale impulse and full-scale steps (checks the extremes;
-    # the steps are amplified by 1.2132 and must saturate at -32768 / 32767)
+    # the impulse peaks at +32512, the steady part of each step comes out near 0)
     parts.append(np.r_[-32768, np.zeros(3)])
     parts.append(np.full(6, 32767))
     parts.append(np.full(6, -32768))
-    # Nyquist-rate square wave (lowest gain of the filter: 0.0368)
+    # Nyquist-rate square wave (highest gain of the filter: 1.99, saturates)
     parts.append(np.tile([32767, -32768], 4))
     n = np.arange(64)
     for f in (300, 1000, 3000):
